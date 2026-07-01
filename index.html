@@ -6,38 +6,211 @@
 			name="viewport"
 			content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
 		/>
-
-		<title>reveal.js</title>
-
+		<title>Pecha Kucha</title>
 		<link rel="stylesheet" href="dist/reset.css" />
 		<link rel="stylesheet" href="dist/reveal.css" />
-		<link rel="stylesheet" href="dist/theme/black.css" />
+		<link rel="stylesheet" href="dist/theme/white.css" />
 
-		<!-- Theme used for syntax highlighted code -->
-		<link rel="stylesheet" href="dist/plugin/highlight/monokai.css" />
+		<style>
+			.reveal section img {
+				max-height: 90vh;
+				max-width: 100%;
+			}
+
+      .reveal .progress {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        height: 16px;              /* make it bigger */
+        background: rgba(0, 0, 0, 0.08);
+      }
+      .reveal .progress span {
+        background: #2c3e50;       /* fill color */
+      }
+
+      #time-bar-track {
+				position: fixed;
+				bottom: 16px;
+				left: 0;
+				width: 100%;
+				height: 8px;
+				background: rgba(255, 255, 255, 0.08);
+				z-index: 100;
+			}
+			#time-bar-fill {
+				height: 100%;
+				width: 100%;
+				background: #4fd1c5;
+				transform-origin: left;
+			}
+
+      .reveal .slide-number {
+        font-family: sans-serif;
+        font-size: 20px;
+        font-weight: 700;
+        color: #2c3e50;
+        background: rgba(255, 255, 255, 0.85);
+        padding: 6px 12px;
+        border-radius: 6px;
+        bottom: 32px; 
+        right: 16px;
+      }
+		
+			#pause-btn {
+				position: fixed;
+				bottom: 32px;
+				left: 16px;
+				z-index: 100;
+				width: 70px;
+				height: 70px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				border: none;
+				border-radius: 50%;
+				background: #4fd1c5;
+				color: #111;
+				cursor: pointer;
+				font-size: 20px;
+				line-height: 1;
+				padding: 0;
+			}
+			#pause-btn.is-paused {
+				background: #ff6b6b;
+				color: #fff;
+			}
+
+    </style>
 	</head>
 	<body>
+		<div id="time-bar-track"><div id="time-bar-fill"></div></div>
+		<button id="pause-btn" type="button" aria-label="Pause">
+      <img id="pause-icon" src="assets/pause.svg" alt="" width="40" height="40" />
+		</button>
+
 		<div class="reveal">
 			<div class="slides">
-				<section>Slide 1</section>
-				<section>Slide 2</section>
+				<section>
+					<h2>Hallo</h2>
+				</section>
+         <section>
+					<h2>Thema</h2>
+				</section>
+         <section>
+          <img src="assets/nasa_space_shuttle_full.png" />
+          <img src="assets/nasa_space_shuttle_damage.png" 
+            style="position: absolute; bottom: -5%; left: -5%; width: 40%; border: 2px solid white;" />
+
+          <img src="assets/nasa_space_shuttle_work.png" 
+            style="position: absolute; top: -5%; left: -5%; width: 40%; border: 2px solid white;" />
+
+				</section>
+        <section>
+					<h2>Problem 2</h2>
+				</section>
+        <section>
+          <img src="assets/spacex_v1_damage_top.png" />
+				</section>
+        <section>
+					<h2>Was die Nasa gemacht hat</h2>
+				</section>
+        <section>
+					<h2>Probleme mit dem System der Nase</h2>
+				</section>
+        <section>
+					<h2>SpaceX V1</h2>
+				</section>
+        <section>
+					<h2>SpaceX Probleme V1</h2>
+				</section>
+        <section>
+					<h2>SpaceX V2</h2>
+				</section>
+        <section>
+					<h2>SpaceX V2 Aufbau</h2>
+				</section>
+        <section>
+					<h2>SpaceX V2 Kühlung</h2>
+				</section>
 			</div>
 		</div>
-
 		<script src="dist/reveal.js"></script>
-		<script src="dist/plugin/notes.js"></script>
-		<script src="dist/plugin/markdown.js"></script>
-		<script src="dist/plugin/highlight.js"></script>
 		<script>
-			// More info about initialization & config:
-			// - https://revealjs.com/initialization/
-			// - https://revealjs.com/config/
 			Reveal.initialize({
 				hash: true,
-
-				// Learn about plugins: https://revealjs.com/plugins/
-				plugins: [RevealMarkdown, RevealHighlight, RevealNotes],
+				controls: 'speaker',
+				keyboard: true,
+        progress: true,
+        slideNumber: 'c/t',
+				loop: false,
+				plugins: [],
 			});
+
+			(function () {
+        const RUN_ON_NEXT = false;
+				const SLIDE_DURATION = 20000; 				
+        const fill = document.getElementById("time-bar-fill");
+				const pauseBtn = document.getElementById("pause-btn");
+				const pauseIcon = document.getElementById("pause-icon");
+
+				let elapsed = 0;          // ms elapsed within the current slide
+				let lastFrameTime = 0;    // performance.now() at the last tick
+				let paused = false;
+				let advanced = false;     // guards against calling Reveal.next() more than once
+				let rafId = null;
+
+				function tick(now) {
+					if (!paused) {
+						const dt = now - lastFrameTime;
+						elapsed += dt;
+					}
+					lastFrameTime = now;
+
+					const progress = Math.min(1, elapsed / SLIDE_DURATION);
+					fill.style.transform = `scaleX(${progress})`;
+
+					if (progress >= 1 && !advanced) {
+						advanced = true;
+						Reveal.next();
+					}
+
+					rafId = requestAnimationFrame(tick);
+				}
+
+				function resetIndicator(slideEl) {
+					elapsed = 0;
+					advanced = false;
+					lastFrameTime = performance.now();
+
+					fill.style.transition = "none";
+					fill.style.transform = "scaleX(0)";
+
+					if (rafId) cancelAnimationFrame(rafId);
+					rafId = requestAnimationFrame(tick);
+				}
+
+        function setPaused(next) {
+          paused = next;
+          pauseIcon.src = paused ? "assets/play.svg" : "assets/pause.svg";
+          pauseBtn.setAttribute("aria-label", paused ? "Resume" : "Pause");
+          pauseBtn.classList.toggle("is-paused", paused);
+          lastFrameTime = performance.now();
+        }
+        pauseBtn.addEventListener("click", () => setPaused(!paused));
+
+				document.addEventListener("keydown", (e) => {
+					if (e.key === "s" || e.key === "S") setPaused(!paused);
+				});
+
+				Reveal.on("ready", (event) => {
+					resetIndicator(event.currentSlide);
+				});
+
+				Reveal.on("slidechanged", (event) => {
+					setPaused(!RUN_ON_NEXT); 
+          resetIndicator(event.currentSlide);
+				});
+			})();
 		</script>
 	</body>
 </html>
